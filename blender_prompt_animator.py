@@ -825,8 +825,6 @@ class BlenderScriptGenerator:
         lines.append(f'output.location = (200, 0)')
         lines.append(f'links = world.node_tree.links')
         lines.append(f'links.new(bg.outputs["Background"], output.inputs["Surface"])')
-        lines.append(f'world.light_settings.use_ambient_occlusion = True')
-        lines.append(f'world.light_settings.ao_factor = {spec.world_lighting}')
         lines.append('')
 
         # Render settings
