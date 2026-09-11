@@ -830,14 +830,15 @@ class BlenderScriptGenerator:
         # Render settings
         lines.append('# --- Render settings ---')
         lines.append(f'render = bpy.context.scene.render')
+        lines.append(f'scene = bpy.context.scene')
         lines.append(f'render.engine = "{spec.render_engine}"')
         lines.append(f'render.resolution_x = {spec.resolution[0]}')
         lines.append(f'render.resolution_y = {spec.resolution[1]}')
         lines.append(f'render.resolution_percentage = 100')
         lines.append(f'render.fps = {spec.fps}')
-        lines.append(f'render.frame_start = 1')
+        lines.append(f'scene.frame_start = 1')
         num_frames = int(spec.duration_seconds * spec.fps)
-        lines.append(f'render.frame_end = {num_frames}')
+        lines.append(f'scene.frame_end = {num_frames}')
         if spec.render_engine == "CYCLES":
             lines.append(f'bpy.context.scene.cycles.samples = {spec.samples}')
             lines.append(f'bpy.context.scene.cycles.preview_samples = 8')
