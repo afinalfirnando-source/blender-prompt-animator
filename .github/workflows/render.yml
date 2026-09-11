@@ -56,20 +56,18 @@ jobs:
         run: mkdir -p blender_output
       
       - name: Generate animation scripts
-        run: |
-          python blender_prompt_animator.py --all --file pond5_seamless.txt --ci
-        working-directory: blender_prompt_animator
+        run: python blender_prompt_animator.py --all --file pond5_seamless.txt --ci --render
       
       - name: Count generated scripts
         id: count
         run: |
-          echo "count=$(ls blender_prompt_animator/blender_output/anim_*.py | wc -l)" >> $GITHUB_OUTPUT
+          echo "count=$(ls blender_output/anim_*.py | wc -l)" >> $GITHUB_OUTPUT
       
       - name: Upload scripts
         uses: actions/upload-artifact@v4
         with:
           name: generated-scripts
-          path: blender_prompt_animator/blender_output/anim_*.py
+          path: blender_output/anim_*.py
 
   render-animations:
     name: Render ${{ matrix.index }}
@@ -98,14 +96,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: generated-scripts
-          path: blender_prompt_animator/blender_output
+          path: blender_output
       
       - name: Select script to render
         id: select
         env:
           MATRIX_INDEX: ${{ matrix.index }}
         run: |
-          mapfile -t scripts < <(ls blender_prompt_animator/blender_output/anim_*.py 2>/dev/null | sort)
+          mapfile -t scripts < <(ls blender_output/anim_*.py 2>/dev/null | sort)
           idx=$((MATRIX_INDEX - 1))
           if [ $idx -ge ${#scripts[@]} ]; then
             echo "script_path=NONE" >> $GITHUB_OUTPUT
@@ -125,6 +123,6 @@ jobs:
         with:
           name: render_${{ matrix.index }}_${{ steps.select.outputs.script_name }}
           path: |
-            blender_prompt_animator/blender_output/render_*.mp4
-            blender_prompt_animator/blender_output/anim_*.blend
+            blender_output/render_*.mp4
+            blender_output/anim_*.blend
           if-no-files-found: warn

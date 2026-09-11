@@ -1421,6 +1421,21 @@ def main():
     # Create animator early
     animator = BlenderPromptAnimator(args.workspace)
     
+    # Apply CI overrides to the spec after parsing
+    def process_prompt_ci(prompt_text, render_flag):
+        metadata = animator.process_prompt(prompt_text, render=render_flag)
+        spec = PromptParser.parse(prompt_text)
+        spec.render_engine = "BLENDER_EEVEE"
+        spec.samples = 16
+        script_content = BlenderScriptGenerator.generate(
+            spec,
+            output_blend=metadata['blend_file'],
+            output_render=metadata['render_file'].replace('.mp4', '') if render_flag else ""
+        )
+        with open(metadata['script_file'], 'w', encoding='utf-8') as f:
+            f.write(script_content)
+        return metadata
+    
     # Get prompt
     prompt = args.prompt_opt or args.prompt or args.file
     if not prompt:
@@ -1441,7 +1456,9 @@ def main():
             if args.ci:
                 p = p.replace('4k', '1080p').replace('4K', '1080p')
                 p += ' eevee'
-            metadata = animator.process_prompt(p, render=args.render)
+                metadata = process_prompt_ci(p, args.render)
+            else:
+                metadata = animator.process_prompt(p, render=args.render)
             metadata_path = os.path.join(animator.output_dir, f"meta_{metadata['timestamp']}.json")
             with open(metadata_path, 'w', encoding='utf-8') as mf:
                 json.dump(metadata, mf, indent=2, ensure_ascii=False)
@@ -1455,22 +1472,6 @@ def main():
     if args.file:
         with open(args.file, 'r', encoding='utf-8') as f:
             prompt = f.read().strip()
-    
-    # Apply CI overrides to the spec after parsing
-    def process_prompt_ci(prompt_text, render_flag):
-        metadata = animator.process_prompt(prompt_text, render=render_flag)
-        if args.ci:
-            spec = PromptParser.parse(prompt_text)
-            spec.render_engine = "BLENDER_EEVEE"
-            spec.samples = 16
-            script_content = BlenderScriptGenerator.generate(
-                spec,
-                output_blend=metadata['blend_file'],
-                output_render=metadata['render_file'].replace('.mp4', '') if render_flag else ""
-            )
-            with open(metadata['script_file'], 'w', encoding='utf-8') as f:
-                f.write(script_content)
-        return metadata
     
     # Process
     if args.ci:
