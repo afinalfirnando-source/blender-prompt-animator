@@ -98,17 +98,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: generated-scripts
-          path: blender_output
+          path: blender_prompt_animator/blender_output
       
       - name: Select script to render
         id: select
+        env:
+          MATRIX_INDEX: ${{ matrix.index }}
         run: |
-          scripts=($(ls blender_output/anim_*.py 2>/dev/null | sort))
-          idx=$((${{\"${{ matrix.index }}"}} - 1))
+          mapfile -t scripts < <(ls blender_prompt_animator/blender_output/anim_*.py 2>/dev/null | sort)
+          idx=$((MATRIX_INDEX - 1))
           if [ $idx -ge ${#scripts[@]} ]; then
             echo "script_path=NONE" >> $GITHUB_OUTPUT
           else
-            echo "script_path=${{scripts[$idx]}}" >> $GITHUB_OUTPUT
+            echo "script_path=${scripts[$idx]}" >> $GITHUB_OUTPUT
             echo "script_name=$(basename ${scripts[$idx]})" >> $GITHUB_OUTPUT
           fi
       
@@ -116,7 +118,6 @@ jobs:
         if: steps.select.outputs.script_path != 'NONE'
         run: |
           blender --background --python "${{ steps.select.outputs.script_path }}"
-        working-directory: blender_prompt_animator
       
       - name: Upload rendered video
         if: steps.select.outputs.script_path != 'NONE'
