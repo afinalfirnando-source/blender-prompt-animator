@@ -821,7 +821,6 @@ class BlenderScriptGenerator:
         lines.append(f'bg = bg_nodes.new(type="ShaderNodeBackground")')
         lines.append(f'bg.location = (0, 0)')
         lines.append(f'bg.inputs["Color"].default_value = ({bg[0]:.4f}, {bg[1]:.4f}, {bg[2]:.4f}, {bg[3]:.4f})')
-        lines.append(f'bg.inputs["Roughness"].default_value = 0.8')
         lines.append(f'output = bg_nodes.new(type="ShaderNodeOutputWorld")')
         lines.append(f'output.location = (200, 0)')
         lines.append(f'links = world.node_tree.links')
