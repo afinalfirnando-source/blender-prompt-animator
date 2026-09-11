@@ -466,9 +466,9 @@ class PromptParser:
         if 'cycles' in text:
             return ('CYCLES', 128)
         if 'eevee' in text or 'eevee' in text:
-            return ('BLENDER_EEVEE', 64)
+            return ('BLENDER_EEVEE_NEXT', 64)
         if 'wireframe' in text or 'garis' in text:
-            return ('BLENDER_EEVEE', 1)
+            return ('BLENDER_EEVEE_NEXT', 1)
         # Default
         return ('CYCLES', 128)
 
@@ -1048,8 +1048,8 @@ class BlenderScriptGenerator:
         if spec.bloom:
             lines.append('')
             lines.append('# --- Bloom / Glow ---')
-            lines.append(f'render.engine = "BLENDER_EEVEE"')
-            lines.append(f'bpy.context.scene.render.engine = "BLENDER_EEVEE"')
+            lines.append(f'render.engine = "BLENDER_EEVEE_NEXT"')
+            lines.append(f'bpy.context.scene.render.engine = "BLENDER_EEVEE_NEXT"')
             lines.append(f'bpy.context.view_layer.eevee.use_bloom = True')
             lines.append(f'bpy.context.view_layer.eevee.bloom_intensity = {spec.bloom_intensity}')
             lines.append(f'bpy.context.view_layer.eevee.bloom_radius = 6.5')
@@ -1421,7 +1421,7 @@ def main():
     def process_prompt_ci(prompt_text, render_flag):
         metadata = animator.process_prompt(prompt_text, render=render_flag)
         spec = PromptParser.parse(prompt_text)
-        spec.render_engine = "BLENDER_EEVEE"
+        spec.render_engine = "BLENDER_EEVEE_NEXT"
         spec.samples = 16
         script_content = BlenderScriptGenerator.generate(
             spec,
