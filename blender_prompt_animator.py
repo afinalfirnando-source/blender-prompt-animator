@@ -891,7 +891,7 @@ class BlenderScriptGenerator:
                 lines.append(f'{obj_var} = bpy.context.active_object')
                 lines.append(f'{obj_var}.name = "{obj_name}"')
             elif obj.obj_type == 'sphere':
-                lines.append(f'bpy.ops.mesh.primitive_uv_sphere_add(radius=1, segments=64, ring_freq=32)')
+                lines.append(f'bpy.ops.mesh.primitive_uv_sphere_add(radius=1, segments=64, ring_freqs=32)')
                 lines.append(f'{obj_var} = bpy.context.active_object')
                 lines.append(f'{obj_var}.name = "{obj_name}"')
             elif obj.obj_type == 'cylinder':
