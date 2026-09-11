@@ -1,0 +1,3 @@
+# Blender Prompt Animator - Python dependencies
+# Core module uses only Python standard library (no pip packages needed)
+# For CI rendering, Blender is installed separately via GitHub Actions

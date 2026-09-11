@@ -1,0 +1,129 @@
+name: Render Animations (4K→1080p CI Mode)
+
+on:
+  workflow_dispatch:
+    inputs:
+      resolution:
+        description: "Resolution"
+        required: false
+        default: "1080p"
+        type: choice
+        options:
+          - "1080p"
+          - "720p"
+      engine:
+        description: "Render Engine"
+        required: false
+        default: "eevee"
+        type: choice
+        options:
+          - "eevee"
+          - "cycles"
+      max_animations:
+        description: "Max animations to render (0 = all)"
+        required: false
+        default: "0"
+        type: number
+  schedule:
+    - cron: "0 0 * * 0"
+
+env:
+  PYTHONUNBUFFERED: 1
+
+jobs:
+  generate-scripts:
+    name: Generate Scripts
+    runs-on: ubuntu-latest
+    outputs:
+      script_count: ${{ steps.count.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install Blender
+        uses: bradyajohnston/setup-blender@v5
+        with:
+          version: "4.2"
+      
+      - name: Verify Blender
+        run: blender --version
+      
+      - name: Create output dir
+        run: mkdir -p blender_output
+      
+      - name: Generate animation scripts
+        run: |
+          python blender_prompt_animator.py --all --file pond5_seamless.txt --ci
+        working-directory: blender_prompt_animator
+      
+      - name: Count generated scripts
+        id: count
+        run: |
+          echo "count=$(ls blender_prompt_animator/blender_output/anim_*.py | wc -l)" >> $GITHUB_OUTPUT
+      
+      - name: Upload scripts
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-scripts
+          path: blender_prompt_animator/blender_output/anim_*.py
+
+  render-animations:
+    name: Render ${{ matrix.index }}
+    needs: generate-scripts
+    runs-on: ubuntu-latest
+    if: always()
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        index: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install Blender
+        uses: bradyajohnston/setup-blender@v5
+        with:
+          version: "4.2"
+      
+      - name: Download generated scripts
+        uses: actions/download-artifact@v4
+        with:
+          name: generated-scripts
+          path: blender_output
+      
+      - name: Select script to render
+        id: select
+        run: |
+          scripts=($(ls blender_output/anim_*.py 2>/dev/null | sort))
+          idx=$((${{\"${{ matrix.index }}"}} - 1))
+          if [ $idx -ge ${#scripts[@]} ]; then
+            echo "script_path=NONE" >> $GITHUB_OUTPUT
+          else
+            echo "script_path=${{scripts[$idx]}}" >> $GITHUB_OUTPUT
+            echo "script_name=$(basename ${scripts[$idx]})" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Render animation in Blender
+        if: steps.select.outputs.script_path != 'NONE'
+        run: |
+          blender --background --python "${{ steps.select.outputs.script_path }}"
+        working-directory: blender_prompt_animator
+      
+      - name: Upload rendered video
+        if: steps.select.outputs.script_path != 'NONE'
+        uses: actions/upload-artifact@v4
+        with:
+          name: render_${{ matrix.index }}_${{ steps.select.outputs.script_name }}
+          path: |
+            blender_prompt_animator/blender_output/render_*.mp4
+            blender_prompt_animator/blender_output/anim_*.blend
+          if-no-files-found: warn
