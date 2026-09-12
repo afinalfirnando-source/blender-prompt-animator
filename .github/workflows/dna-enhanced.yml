@@ -1,0 +1,29 @@
+name: Render DNA Helix Enhanced
+
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bradyajohnston/setup-blender@v5
+        with:
+          version: "5.2"
+      - name: Render DNA Helix Enhanced
+        run: |
+          blender -b dna_enhanced.blend \
+            -o //dna_####.png -F PNG -s 1 -e 360 -a
+      - name: Convert to MP4
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          ffmpeg -framerate 30 -i dna_%04d.png \
+            -c:v libx264 -pix_fmt yuv420p -movflags +faststart \
+            dna_helix_enhanced_12s.mp4
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: dna-helix-enhanced-12s
+          path: dna_helix_enhanced_12s.mp4
