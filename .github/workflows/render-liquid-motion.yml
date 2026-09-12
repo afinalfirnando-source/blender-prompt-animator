@@ -1,0 +1,60 @@
+name: Render Abstract Liquid Motion
+
+on:
+  workflow_dispatch:
+    inputs:
+      resolution:
+        description: "Resolution"
+        required: false
+        default: "4k"
+        type: choice
+        options: ["4k", "1080p", "720p"]
+      engine:
+        description: "Render Engine"
+        required: false
+        default: "cycles"
+        type: choice
+        options: ["cycles", "eevee"]
+      duration:
+        description: "Duration in seconds"
+        required: false
+        default: "12"
+        type: choice
+        options: ["12", "15", "20"]
+
+jobs:
+  render-liquid-motion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: bradyajohnston/setup-blender@v5
+        with:
+          version: "5.2"
+      - name: Render Liquid Motion
+        run: |
+          RES="${{ github.event.inputs.resolution || '4k' }}"
+          case $RES in
+            4k) RX=3840; RY=2160 ;;
+            1080p) RX=1920; RY=1080 ;;
+            720p) RX=1280; RY=720 ;;
+          esac
+          DUR="${{ github.event.inputs.duration || '12' }}"
+          FRAMES=$((DUR * 30))
+          blender -b abstract_liquid_motion_preview.blend \
+            -o //liquid_motion_####.png -F PNG -s 1 -e $FRAMES -a
+      - name: Convert to MP4
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          DUR="${{ github.event.inputs.duration || '12' }}"
+          ffmpeg -framerate 30 -i liquid_motion_%04d.png \
+            -c:v libx264 -pix_fmt yuv420p -movflags +faststart \
+            -t $DUR liquid_motion_${DUR}s.mp4
+      - name: Upload Liquid Motion
+        uses: actions/upload-artifact@v4
+        with:
+          name: liquid-motion-${{ github.event.inputs.duration || '12' }}s
+          path: liquid_motion_*.mp4
