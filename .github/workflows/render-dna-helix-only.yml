@@ -1,0 +1,61 @@
+name: Render DNA Helix Seamless Loop
+
+on:
+  workflow_dispatch:
+    inputs:
+      resolution:
+        description: "Resolution"
+        required: false
+        default: "4k"
+        type: choice
+        options: ["4k", "1080p", "720p"]
+      engine:
+        description: "Render Engine"
+        required: false
+        default: "cycles"
+        type: choice
+        options: ["cycles", "eevee"]
+      duration:
+        description: "Duration in seconds"
+        required: false
+        default: "12"
+        type: choice
+        options: ["12", "15", "20"]
+
+env:
+  BLENDER_VERSION: "5.2"
+
+jobs:
+  render-dna-helix:
+    name: Render DNA Helix Loop
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bradyajohnston/setup-blender@v5
+        with:
+          version: ${{ env.BLENDER_VERSION }}
+      - name: Render DNA Helix
+        run: |
+          RES="${{ github.event.inputs.resolution || '4k' }}"
+          case $RES in
+            4k) RX=3840; RY=2160 ;;
+            1080p) RX=1920; RY=1080 ;;
+            720p) RX=1280; RY=720 ;;
+          esac
+          DUR="${{ github.event.inputs.duration || '12' }}"
+          FRAMES=$((DUR * 30))
+          blender -b dna_helix_loop_preview.blend \
+            -o //dna_helix_####.png -F PNG -s 1 -e $FRAMES -a
+      - name: Convert to MP4
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          DUR="${{ github.event.inputs.duration || '12' }}"
+          ffmpeg -framerate 30 -i dna_helix_%04d.png \
+            -c:v libx264 -pix_fmt yuv420p -movflags +faststart \
+            -t $DUR dna_helix_loop_${DUR}s.mp4
+      - name: Upload DNA Helix
+        uses: actions/upload-artifact@v4
+        with:
+          name: dna-helix-loop-${{ github.event.inputs.duration || '12' }}s
+          path: dna_helix_loop_*.mp4
